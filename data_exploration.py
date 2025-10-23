@@ -1,7 +1,8 @@
 
 
 # %%
-
+import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import polars as pl
@@ -12,6 +13,10 @@ from sklearn.linear_model import LinearRegression
 
 TARGET_COL = 'demand'
 DATE_COL = 'date'
+
+IMG_FOLDER = Path("img")
+if not os.path.exists(IMG_FOLDER):
+    os.mkdir(IMG_FOLDER)
 
 # %% Dataframe analysis
 
@@ -49,6 +54,8 @@ train['demand'].plot(
 )
 
 plt.tight_layout()
+
+plt.savefig(IMG_FOLDER / 'train_demand.png')
 
 del train
 
