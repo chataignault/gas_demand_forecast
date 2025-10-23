@@ -9,7 +9,7 @@ import polars as pl
 import datetime as dt
 from matplotlib import pyplot as plt
 from sklearn.linear_model import LinearRegression
-
+from enum import Enum
 
 TARGET_COL = 'demand'
 DATE_COL = 'date'
@@ -17,6 +17,26 @@ DATE_COL = 'date'
 IMG_FOLDER = Path("img")
 if not os.path.exists(IMG_FOLDER):
     os.mkdir(IMG_FOLDER)
+
+class Month(int, Enum):
+    Jan = 1
+    Feb = 2
+    Mar = 3
+    Apr = 4
+    May = 5
+    Jun = 6
+    Jul = 7
+    Aug = 8
+    Sep = 9
+    Oct = 10
+    Nov = 11
+    Dec = 12
+
+class Quarter(Enum):
+    Q1 = set([Month.Jan, Month.Feb, Month.Mar])
+    Q2 = set([Month.Apr, Month.May, Month.Jun])
+    Q3 = set([Month.Jul, Month.Aug, Month.Sep])
+    Q4 = set([Month.Oct, Month.Nov, Month.Dec])
 
 # %% Dataframe analysis
 
@@ -92,9 +112,8 @@ y_hat = lin.predict(X+x_mean)
 print(squared_error(y, y_hat))
 dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
 
+del train
 
-
-# del train
 # %% Plot benchmark in-sample prediction
 
 
@@ -102,12 +121,15 @@ fig, ax = plt.subplots(
     figsize=(10, 5),
 )
 
-ax.plot(dates, y, label='target')
-ax.plot(dates, y_hat, label='predicted')
+ax.plot(dates, y, label='target', alpha=.7)
+ax.plot(dates, y_hat, label='predicted', alpha=.7)
 
+ax.grid()
 ax.legend()
-
+ax.set_title("In-sample gas demand")
 fig.tight_layout()
+
+fig.savefig(IMG_FOLDER / 'linear_prediction.png')
 
 print(f"Squared error : {squared_error(y, y_hat)}")
 
@@ -116,17 +138,31 @@ print(f"Squared error : {squared_error(y, y_hat)}")
 test = pd.read_csv('test.csv')
 test_start, test_end = test[DATE_COL].agg(['min', 'max'])
 
+print(f"\nOut-of-sample data from {test_start} to {test_end}")
+print("Which is exactly one year.")
 dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
 
 
-
 # %%
-X_test = test[[c for c in test.columns if c not in ['date', 'id']]].to_numpy()
+features = [c for c in test.columns if c not in ['date', 'id']]
+X_test = test[features].to_numpy()
 
 # %% Relative difference of features
 
 var_diff = (np.var(X, axis=0) - np.var(X_test, axis=0)) / np.var(X, axis=0)
-pd.Series(var_diff).sort_values().plot(kind='bar')
+var_diff = pd.Series(var_diff, index=features)
+var_diff = var_diff.loc[var_diff.abs() > .05]
+colours = var_diff.apply(lambda v : 'green' if v > 0. else 'red')
+var_diff.sort_values().plot(
+    kind='bar',
+    title='OOS features, variance, relative difference',
+    color=var_diff.sort_values().index.to_series().map(colours).to_list(),
+    alpha=.5
+    )
+
+plt.tight_layout()
+
+plt.savefig(IMG_FOLDER / 'oos_var_diff.png')
 
 # %%
 
