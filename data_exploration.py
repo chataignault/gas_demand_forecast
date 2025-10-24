@@ -39,6 +39,8 @@ class Quarter(Enum):
     Q3 = set([Month.Jul, Month.Aug, Month.Sep])
     Q4 = set([Month.Oct, Month.Nov, Month.Dec])
 
+TEMP_C_TO_K = 273.15
+
 # %% Dataframe analysis
 
 train = pd.read_csv("train.csv")
@@ -75,13 +77,15 @@ display(pos.groupby('base_name')['is_positive'].all().reset_index())
 
 temp_features = [f for f in features if f.startswith("temp")]
 
-train[temp_features] += 273.17
+train[temp_features] += TEMP_C_TO_K
 
 train['demand'].plot(
     figsize=(10, 5),
     grid=True,
     title="Target value : daily demand"
 )
+
+# %%
 
 plt.tight_layout()
 
@@ -108,6 +112,13 @@ lin = LinearRegression(
     copy_X=False
     )
 
+
+# feature engineer : log K temp
+log_k_temp_features = []
+for c in temp_features:
+    train = train.with_columns(np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K))
+    log_k_temp_features.append(c+"_logk")
+
 y = train.select(TARGET_COL).to_numpy().T[0]
 X = train.select(pl.exclude([TARGET_COL, DATE_COL])).to_numpy()
 x_mean = np.mean(X, axis=0)
@@ -125,7 +136,6 @@ dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
 del train
 
 # %% Plot benchmark in-sample prediction
-
 
 fig, ax = plt.subplots(
     figsize=(10, 5),
@@ -152,7 +162,6 @@ print(f"\nOut-of-sample data from {test_start} to {test_end}")
 print("Which is exactly one year.")
 dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
 
-
 # %%
 X_test = test[features].to_numpy()
 
@@ -173,7 +182,7 @@ plt.tight_layout()
 
 plt.savefig(IMG_FOLDER / 'oos_var_diff.png')
 
-# %%
+# %% 
 
 predicted_demand = lin.predict(X_test - x_mean)
 
@@ -186,7 +195,6 @@ plt.tight_layout()
 #%% Plot in-sample with out-of-sample
 
 fig, ax = plt.subplots(figsize=(10, 5))
-
 
 ax.plot(dates, y, label='IS')
 ax.plot(dates_test, predicted_demand, c='orange', label='OOS')
