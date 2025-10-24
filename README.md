@@ -31,6 +31,10 @@ many have large discrepancies between in/out sample.
 - Non-linear feature engineering
 - Feature importance analysis
 
+
+<img src="img/gb_in_sample.png" width="500px" />
+
+
 ## Gaussian Process model
 
 - Kernel choice

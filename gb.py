@@ -7,6 +7,13 @@ import polars as pl
 from sklearn.ensemble import GradientBoostingRegressor
 from IPython.display import display
 from matplotlib import pyplot as plt
+import datetime as dt
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+IMG_FOLDER = Path("img")
+if not os.path.exists(IMG_FOLDER):
+    os.mkdir(IMG_FOLDER)
 
 TARGET_COL = 'demand'
 
@@ -38,9 +45,10 @@ model.fit(X, y)
 
 y_hat = model.predict(X)
 
+dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
+
+
 # %%
-from sklearn.metrics import mean_squared_error
-import numpy as np
 
 def norm2(x:np.ndarray, y:np.ndarray):
     """Mean Squared Error"""
@@ -49,3 +57,15 @@ def norm2(x:np.ndarray, y:np.ndarray):
     return np.sqrt(np.mean((x - y)**2))
 
 mean_squared_error(y_hat, y), norm2(y_hat, y)
+
+# %%
+
+fig, ax = plt.subplots(figsize=(10, 5))
+
+ax.plot(dates, y, label='target', alpha=.8)
+ax.plot(dates, y_hat, label='predicted', alpha=.8)
+
+ax.grid()
+ax.set_title("Gradient boost in-sample prediction vs target")
+
+fig.savefig(IMG_FOLDER / 'gb_in_sample.png')

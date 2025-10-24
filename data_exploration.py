@@ -85,8 +85,6 @@ train['demand'].plot(
     title="Target value : daily demand"
 )
 
-# %%
-
 plt.tight_layout()
 
 plt.savefig(IMG_FOLDER / 'train_demand.png')
