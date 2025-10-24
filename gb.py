@@ -85,7 +85,7 @@ y_hat_test = model.predict(X_test)
 fig, ax = plt.subplots(figsize=(10, 5))
 
 ax.plot(dates, y, label='in-sample')
-ax.plot(dates_test, y_hat_test, label='OOS')
+ax.plot(dates_test, y_hat_test, label='OOS', alpha=.8)
 
 ax.legend()
 ax.grid()
@@ -93,3 +93,4 @@ ax.grid()
 ax.set_title("Gradient-boost in sample target and OOS prediction")
 
 fig.savefig(IMG_FOLDER / 'gb_oos_prediction.png')
+# %%

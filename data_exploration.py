@@ -107,26 +107,26 @@ train = (
 
 lin = LinearRegression(
     fit_intercept=True,
-    copy_X=False
+    copy_X=True
     )
 
 
-# feature engineer : log K temp
-log_k_temp_features = []
-for c in temp_features:
-    train = train.with_columns(np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K))
-    log_k_temp_features.append(c+"_logk")
+# # feature engineer : log K temp
+# log_k_temp_features = []
+# for c in temp_features:
+#     train = train.with_columns(np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K))
+#     log_k_temp_features.append(c+"_logk")
 
 y = train.select(TARGET_COL).to_numpy().T[0]
 X = train.select(pl.exclude([TARGET_COL, DATE_COL])).to_numpy()
-x_mean = np.mean(X, axis=0)
+x_mean = np.mean(X, axis=0).copy()
 
 print(x_mean.shape)
 print(X.shape)
 
 lin.fit(X, y)
 
-y_hat = lin.predict(X+x_mean)
+y_hat = lin.predict(X)
 
 print(norm2(y, y_hat))
 dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
@@ -182,7 +182,7 @@ plt.savefig(IMG_FOLDER / 'oos_var_diff.png')
 
 # %% 
 
-predicted_demand = lin.predict(X_test - x_mean)
+predicted_demand = lin.predict(X_test)
 
 fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -194,9 +194,17 @@ plt.tight_layout()
 
 fig, ax = plt.subplots(figsize=(10, 5))
 
-ax.plot(dates, y, label='IS')
-ax.plot(dates_test, predicted_demand, c='orange', label='OOS')
+ax.plot(dates, y, label='IS', alpha=1.)
+# ax.plot(dates, y_hat, label='IS-pred', alpha=.4)
+ax.plot(dates_test, predicted_demand, c='orange', label='OOS-pred', alpha=.8)
+
+ax.grid()
+ax.legend()
+
+ax.set_title("Linear regression OOS prediction after training data")
 
 fig.tight_layout()
+
+fig.savefig(IMG_FOLDER / 'lin_oos.png')
 
 # %%
