@@ -18,6 +18,18 @@ many have large discrepancies between in/out sample.
 
 ## Metrics 
 
+**RMSE :**
+
+```math
+\text{RMSE} = \sqrt{\frac{1}{N} \sum_{i=1}{N} (x_i - \bar{x})^2}
+```
+
+**R2 :**
+
+```math
+\text{R}^2 = 1 - \frac{\text{RSS}}{\text{TSS}}
+```
+
 ## Linear Regression benchmark
 
 - 5-fold cross-validation 
