@@ -34,6 +34,8 @@ many have large discrepancies between in/out sample.
 
 <img src="img/gb_in_sample.png" width="500px" />
 
+<img src="img/gb_oos_prediction.png" width="500px" />
+
 
 ## Gaussian Process model
 

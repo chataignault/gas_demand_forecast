@@ -69,3 +69,27 @@ ax.grid()
 ax.set_title("Gradient boost in-sample prediction vs target")
 
 fig.savefig(IMG_FOLDER / 'gb_in_sample.png')
+
+# %%
+
+test = pl.read_csv('test.csv').drop('id')
+
+dates_test = [dt.date.fromisoformat(d) for d in test.select('date').to_numpy().T[0]]
+
+X_test = test.select(features).to_numpy()
+
+y_hat_test = model.predict(X_test)
+
+# %%
+
+fig, ax = plt.subplots(figsize=(10, 5))
+
+ax.plot(dates, y, label='in-sample')
+ax.plot(dates_test, y_hat_test, label='OOS')
+
+ax.legend()
+ax.grid()
+
+ax.set_title("Gradient-boost in sample target and OOS prediction")
+
+fig.savefig(IMG_FOLDER / 'gb_oos_prediction.png')
