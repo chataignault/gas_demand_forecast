@@ -10,6 +10,7 @@ import datetime as dt
 from matplotlib import pyplot as plt
 from sklearn.linear_model import LinearRegression
 from enum import Enum
+from IPython.display import display
 
 TARGET_COL = 'demand'
 DATE_COL = 'date'
@@ -65,7 +66,16 @@ print("Types of features :")
 print(set(['_'.join((x.split('_')[:-1])) for x in train.columns if x not in ['date', 'id', 'demand']]))
 train = train.set_index("date")
 
-# %%
+features = [c for c in train.columns if c not in ['id', 'demand']]
+
+pos = (train[features].min() > 0.).reset_index().rename(columns={'index': 'name', 0: 'is_positive'})
+pos['base_name'] = pos['name'].str.split('_').apply(lambda l : "_".join(l[:-1]))
+print("\nFeatures that are positive :")
+display(pos.groupby('base_name')['is_positive'].all().reset_index())
+
+temp_features = [f for f in features if f.startswith("temp")]
+
+train[temp_features] += 273.17
 
 train['demand'].plot(
     figsize=(10, 5),
@@ -144,7 +154,6 @@ dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
 
 
 # %%
-features = [c for c in test.columns if c not in ['date', 'id']]
 X_test = test[features].to_numpy()
 
 # %% Relative difference of features
