@@ -45,7 +45,7 @@ print(f"y shape: {y_scaled.shape}")
 # %% Define kernel for seasonal gas demand
 
 # Composite kernel structure:
-# 1. RBF × Periodic: captures smooth seasonal variations (yearly cycle)
+# 1. RBF and Periodic: captures smooth seasonal variations (yearly cycle)
 # 2. RBF: captures longer-term trends and non-periodic variations
 # 3. WhiteKernel: measurement noise
 
