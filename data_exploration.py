@@ -95,7 +95,7 @@ del train
 
 # %% Define first objective function
 
-def squared_error(x:np.ndarray, y:np.ndarray):
+def norm2(x:np.ndarray, y:np.ndarray):
     """Mean Squared Error"""
     assert len(x) == len(y)
     assert len(x) > 0
@@ -130,7 +130,7 @@ lin.fit(X, y)
 
 y_hat = lin.predict(X+x_mean)
 
-print(squared_error(y, y_hat))
+print(norm2(y, y_hat))
 dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
 
 del train
@@ -151,7 +151,7 @@ fig.tight_layout()
 
 fig.savefig(IMG_FOLDER / 'linear_prediction.png')
 
-print(f"Squared error : {squared_error(y, y_hat)}")
+print(f"Root mean squared error : {norm2(y, y_hat)}")
 
 # %% Test dataframe prediction
 
