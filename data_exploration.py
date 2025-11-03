@@ -43,6 +43,7 @@ class Quarter(Enum):
 
 TEMP_C_TO_K = 273.15
 
+
 # %% Dataframe analysis
 
 train = pd.read_csv("train.csv")
@@ -68,6 +69,9 @@ print("One and only one data point per day (weekends included)")
 print(f"\nNumber of columns : {len(train.columns)}")
 print("Types of features :")
 print(set(['_'.join((x.split('_')[:-1])) for x in train.columns if x not in ['date', 'id', 'demand']]))
+
+train['date'] = train['date'].apply(lambda d: dt.date.fromisoformat(d))
+
 train = train.set_index("date")
 
 features = [c for c in train.columns if c not in ['id', 'demand']]
@@ -101,16 +105,24 @@ def norm2(x:np.ndarray, y:np.ndarray):
     assert len(x) > 0
     return np.sqrt(np.mean((x - y)**2))
 
-# %% Linear regression as benchmark
+# %% Linear regression as benchmark : feature set definition
 
 train = (
     pl.read_csv("train.csv").drop("id")
+).with_columns(
+    pl.col('date').str.to_date()
 )
 # feature engineer : log K temp
 log_k_temp_features = []
 for c in temp_features:
     train = train.with_columns((np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K)).alias(c+"_logk"))
     log_k_temp_features.append(c+"_logk")
+
+# feature engineer : add level per quarter :
+for q in Quarter:
+    train = train.with_columns(
+        pl.col('date').dt.month().is_in(q.value).cast(pl.Int8).alias(q.name)
+    )
 
 y = train.select(TARGET_COL).to_numpy().T[0]
 X = train.select(pl.exclude([TARGET_COL, DATE_COL])).to_numpy()
@@ -221,7 +233,7 @@ print(f"Best CV RMSE: {-grid_search.best_score_:.4f}")
 y_hat = lin.predict(X)
 
 print(norm2(y, y_hat))
-dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
+dates = [d for d in train.select('date').to_numpy().T[0]]
 
 del train
 
@@ -250,13 +262,23 @@ test_start, test_end = test[DATE_COL].agg(['min', 'max'])
 
 print(f"\nOut-of-sample data from {test_start} to {test_end}")
 print("Which is exactly two years.")
-dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
+# dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
+dates_test = [d for d in test[DATE_COL].to_numpy()]
 
 # %%
-test = pl.from_dataframe(test)
+test = pl.from_dataframe(test).with_columns(
+    pl.col('date').str.to_date()
+)
 for c in temp_features:
     test = test.with_columns((np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K)).alias(c+"_logk"))
-X_test = test.to_pandas()[features+log_k_temp_features].to_numpy()
+
+# feature engineer : add level per quarter :
+for q in Quarter:
+    test = test.with_columns(
+        pl.col('date').dt.month().is_in(q.value).cast(pl.Int8).alias(q.name)
+    )
+
+X_test = test.to_pandas()[features+log_k_temp_features+[q.name for q in Quarter]].to_numpy()
 
 # %% 
 
@@ -285,4 +307,3 @@ fig.tight_layout()
 
 fig.savefig(IMG_FOLDER / 'lin_oos.png')
 
-# %%

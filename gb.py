@@ -47,7 +47,6 @@ y_hat = model.predict(X)
 
 dates = [dt.date.fromisoformat(d) for d in train.select('date').to_numpy().T[0]]
 
-
 # %%
 
 def norm2(x:np.ndarray, y:np.ndarray):
@@ -93,4 +92,3 @@ ax.grid()
 ax.set_title("Gradient-boost in sample target and OOS prediction")
 
 fig.savefig(IMG_FOLDER / 'gb_oos_prediction.png')
-# %%
