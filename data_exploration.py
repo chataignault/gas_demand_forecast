@@ -8,7 +8,8 @@ import pandas as pd
 import polars as pl
 import datetime as dt
 from matplotlib import pyplot as plt
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Lasso
+from sklearn.model_selection import GridSearchCV, KFold
 from enum import Enum
 from IPython.display import display
 
@@ -104,27 +105,46 @@ def norm2(x:np.ndarray, y:np.ndarray):
 train = (
     pl.read_csv("train.csv").drop("id")
 )
-
-lin = LinearRegression(
-    fit_intercept=True,
-    copy_X=True
-    )
-
-
-# # feature engineer : log K temp
-# log_k_temp_features = []
-# for c in temp_features:
-#     train = train.with_columns(np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K))
-#     log_k_temp_features.append(c+"_logk")
+# feature engineer : log K temp
+log_k_temp_features = []
+for c in temp_features:
+    train = train.with_columns((np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K)).alias(c+"_logk"))
+    log_k_temp_features.append(c+"_logk")
 
 y = train.select(TARGET_COL).to_numpy().T[0]
 X = train.select(pl.exclude([TARGET_COL, DATE_COL])).to_numpy()
 x_mean = np.mean(X, axis=0).copy()
 
-print(x_mean.shape)
-print(X.shape)
+print("Shape of the final feature set :", X.shape)
 
-lin.fit(X, y)
+# Define parameter grid for Lasso regularization
+param_grid = {
+    'alpha': np.logspace(-4, 2, 50)  # Test alpha values from 0.0001 to 100
+}
+
+# Set up 5-fold cross-validation with shuffling
+kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+
+# Create Lasso model
+lasso = Lasso(fit_intercept=True, copy_X=True, max_iter=10000)
+
+# Perform grid search with cross-validation
+grid_search = GridSearchCV(
+    estimator=lasso,
+    param_grid=param_grid,
+    cv=kfold,
+    scoring='neg_root_mean_squared_error',
+    n_jobs=-1,
+    verbose=1
+)
+
+# Fit the grid search
+grid_search.fit(X, y)
+
+# Get the best model
+lin = grid_search.best_estimator_
+print(f"\nBest alpha: {grid_search.best_params_['alpha']:.6f}")
+print(f"Best CV RMSE: {-grid_search.best_score_:.4f}")
 
 y_hat = lin.predict(X)
 
@@ -140,7 +160,7 @@ fig, ax = plt.subplots(
 )
 
 ax.plot(dates, y, label='target', alpha=.7)
-ax.plot(dates, y_hat, label='predicted', alpha=.7)
+ax.plot(dates, y_hat, label='predicted (lasso)', alpha=.7)
 
 ax.grid()
 ax.legend()
@@ -157,7 +177,7 @@ test = pd.read_csv('test.csv')
 test_start, test_end = test[DATE_COL].agg(['min', 'max'])
 
 print(f"\nOut-of-sample data from {test_start} to {test_end}")
-print("Which is exactly one year.")
+print("Which is exactly two years.")
 dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
 
 # %%
@@ -165,20 +185,20 @@ X_test = test[features].to_numpy()
 
 # %% Relative difference of features
 
-var_diff = (np.var(X, axis=0) - np.var(X_test, axis=0)) / np.var(X, axis=0)
-var_diff = pd.Series(var_diff, index=features)
-var_diff = var_diff.loc[var_diff.abs() > .05]
-colours = var_diff.apply(lambda v : 'green' if v > 0. else 'red')
-var_diff.sort_values().plot(
-    kind='bar',
-    title='OOS features, variance, relative difference',
-    color=var_diff.sort_values().index.to_series().map(colours).to_list(),
-    alpha=.5
-    )
+# var_diff = (np.var(X, axis=0) - np.var(X_test, axis=0)) / np.var(X, axis=0)
+# var_diff = pd.Series(var_diff, index=features)
+# var_diff = var_diff.loc[var_diff.abs() > .05]
+# colours = var_diff.apply(lambda v : 'green' if v > 0. else 'red')
+# var_diff.sort_values().plot(
+#     kind='bar',
+#     title='OOS features, variance, relative difference',
+#     color=var_diff.sort_values().index.to_series().map(colours).to_list(),
+#     alpha=.5
+#     )
 
-plt.tight_layout()
+# plt.tight_layout()
 
-plt.savefig(IMG_FOLDER / 'oos_var_diff.png')
+# plt.savefig(IMG_FOLDER / 'oos_var_diff.png')
 
 # %% 
 
