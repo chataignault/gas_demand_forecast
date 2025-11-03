@@ -212,7 +212,28 @@ kfold = KFold(n_splits=5, shuffle=True, random_state=42)
 # Create Lasso model
 lasso = Lasso(fit_intercept=True, copy_X=True, max_iter=10000)
 
-# Perform grid search with cross-validation
+# CLAUDE #
+
+# Set random seed for reproducibility
+np.random.seed(42)
+
+# Split data into 90% train and 10% holdout validation
+n_samples = len(X)
+indices = np.random.permutation(n_samples)
+holdout_size = int(0.1 * n_samples)
+train_idx = indices[holdout_size:]
+holdout_idx = indices[:holdout_size]
+
+X_train, y_train = X[train_idx], y[train_idx]
+X_holdout, y_holdout = X[holdout_idx], y[holdout_idx]
+
+print("\n" + "="*60)
+print("Data Split:")
+print("="*60)
+print(f"Training set: {len(X_train)} samples ({len(X_train)/len(X)*100:.1f}%)")
+print(f"Holdout set: {len(X_holdout)} samples ({len(X_holdout)/len(X)*100:.1f}%)")
+
+# Perform grid search with cross-validation on training data
 grid_search = GridSearchCV(
     estimator=lasso,
     param_grid=param_grid,
@@ -222,13 +243,43 @@ grid_search = GridSearchCV(
     verbose=1
 )
 
-# Fit the grid search
-grid_search.fit(X, y)
+# Fit the grid search on training data only
+print("\nTraining GridSearchCV on 90% of data...")
+grid_search.fit(X_train, y_train)
 
 # Get the best model
-lin = grid_search.best_estimator_
-print(f"\nBest alpha: {grid_search.best_params_['alpha']:.6f}")
+best_lasso = grid_search.best_estimator_
+
+print("\n" + "="*60)
+print("GridSearchCV Results (on 90% training data)")
+print("="*60)
+print(f"Best alpha: {grid_search.best_params_['alpha']:.6f}")
 print(f"Best CV RMSE: {-grid_search.best_score_:.4f}")
+
+# Evaluate on holdout set
+y_holdout_pred = best_lasso.predict(X_holdout)
+holdout_rmse = norm2(y_holdout, y_holdout_pred)
+
+print("\n" + "="*60)
+print("Holdout Validation Results (on 10% holdout)")
+print("="*60)
+print(f"Holdout RMSE: {holdout_rmse:.4f}")
+print(f"CV vs Holdout RMSE difference: {abs(-grid_search.best_score_ - holdout_rmse):.4f}")
+
+if holdout_rmse < -grid_search.best_score_ * 1.1:
+    print("✓ Model generalizes well (holdout RMSE within 10% of CV RMSE)")
+else:
+    print("⚠ Potential overfitting detected (holdout RMSE > 110% of CV RMSE)")
+
+# Retrain final model on ALL data for downstream predictions
+print("\n" + "="*60)
+print("Retraining final model on all training data...")
+print("="*60)
+lin = Lasso(alpha=grid_search.best_params_['alpha'], fit_intercept=True, max_iter=10000)
+lin.fit(X, y)
+print("Final model trained on 100% of data")
+
+# CLAUDE END
 
 y_hat = lin.predict(X)
 
