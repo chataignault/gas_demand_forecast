@@ -97,13 +97,17 @@ where the absolute coefficient values have been averaged by category
 
 ### Gradient Boost Regressor prediction
 
-- Feature importance analysis
+*In-sample prediction :*
 
-<img src="img/gb_in_sample.png" width="400px" />
+<img src="img/gb_in_sample.png" width="500px" />
 
-<img src="img/gb_oos_prediction.png" width="400px" />
+*OOS prediction :*
 
+<img src="img/gb_oos_prediction.png" width="500px" />
 
+No negative values on the test set.
+The trained model is less sensitive to outliers,
+the validation RMSE is approximately 10.
 
 ### Gaussian Process model
 
@@ -131,7 +135,7 @@ where ℓ₂ = 10.0 captures long-term patterns
 ```math
 k_{\text{noise}}(x, x') = \sigma_n^2 \cdot \delta(x, x')
 ```
-where σ_n² ∈ [1e-5, 1e1] optimized during training
+where $\sigma_n^2 \in [1e-5, 1e1]$ optimized during training
 
 #### Results
 
