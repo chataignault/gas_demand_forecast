@@ -163,7 +163,7 @@ grid_search_analysis = GridSearchCV(
     verbose=0
 )
 
-grid_search_analysis.fit(X_standardized, y)
+grid_search_analysis.fit(X_standardized, y.copy())
 
 # Get the best model and coefficients
 best_lasso = grid_search_analysis.best_estimator_
@@ -262,8 +262,8 @@ test_start, test_end = test[DATE_COL].agg(['min', 'max'])
 
 print(f"\nOut-of-sample data from {test_start} to {test_end}")
 print("Which is exactly two years.")
-# dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
-dates_test = [d for d in test[DATE_COL].to_numpy()]
+dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
+
 
 # %%
 test = pl.from_dataframe(test).with_columns(
@@ -306,4 +306,3 @@ ax.set_title("Linear regression OOS prediction after training data")
 fig.tight_layout()
 
 fig.savefig(IMG_FOLDER / 'lin_oos.png')
-

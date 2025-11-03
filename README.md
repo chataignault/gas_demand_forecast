@@ -69,6 +69,7 @@ where the choice of kernel is paramount to learning the periodicity correctly.
 - 5-fold cross-validation applied to tune regularisation parameter.
 - Feature engineer : 
     - log kelvin temperature (15 % improvement in-sample RMSE)
+    - seasonal (quarterly) level (15% extra improvement in-sample RMSE) 
 
 *In-sample prediction :*
 
@@ -81,10 +82,10 @@ where the choice of kernel is paramount to learning the periodicity correctly.
 > [!WARNING]
 > The predicted demand is negative on many occurences.
 
-The linear regression, while regularised, seems to have too much variance
-and is sensitive to outliers.
+The linear regression, while regularised, seems to have 
+**too much variance and is sensitive to outliers**.
 
-The in sample RMSE is approximately 14.
+The in-sample RMSE is approximately 12.
 
 A feature importance analysis after standardising the input data shows 
 temperature data is by far the most correlated to the domestic gas demand :
@@ -92,13 +93,11 @@ temperature data is by far the most correlated to the domestic gas demand :
 ![image](img/lin_feature_importance.png)
 
 where the absolute coefficient values have been averaged by category 
-(including log temperature, day and night mixed).
+(including log temperature, day and night not distinguished).
 
 ### Gradient Boost Regressor prediction
 
-- Non-linear feature engineering
 - Feature importance analysis
-
 
 <img src="img/gb_in_sample.png" width="400px" />
 
