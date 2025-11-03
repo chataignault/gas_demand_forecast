@@ -7,7 +7,6 @@ import polars as pl
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel, ConstantKernel as C, ExpSineSquared
 from sklearn.preprocessing import StandardScaler
-from IPython.display import display
 from matplotlib import pyplot as plt
 import datetime as dt
 from sklearn.metrics import mean_squared_error
@@ -165,10 +164,11 @@ print(f"\nSaved plot: {IMG_FOLDER / 'gp_in_sample.png'}")
 
 # %% Out-of-sample prediction
 
-test = pl.read_csv('test.csv').drop('id')
+test = pl.read_csv('test.csv')
+ids_test = test.select(pl.col('id')).to_numpy().T[0]
+test = test.drop('id')
 
 dates_test = [dt.date.fromisoformat(d) for d in test.select('date').to_numpy().T[0]]
-
 X_test = test.select(features).to_numpy()
 X_test_scaled = scaler_X.transform(X_test)
 
@@ -186,6 +186,14 @@ upper_bound_test = y_hat_test + 1.96 * y_std_test
 
 print(f"OOS predictions - min: {y_hat_test.min():.2f}, max: {y_hat_test.max():.2f}")
 print(f"Average uncertainty (std): {y_std_test.mean():.2f}")
+
+# save submission
+pd.DataFrame(
+    {
+        'id':ids_test,
+        'demand': y_hat_test
+    }
+).set_index('id').to_csv('submission_Leon_CHATAIGNAULT.csv')
 
 # %% Plot out-of-sample prediction
 
@@ -237,8 +245,6 @@ ax.set_ylabel("Demand")
 fig.tight_layout()
 fig.savefig(IMG_FOLDER / 'gp_oos_detail.png')
 
-print(f"Saved plot: {IMG_FOLDER / 'gp_oos_detail.png'}")
-
 # %% Check for negative predictions
 
 negative_count = np.sum(y_hat_test < 0)
@@ -247,6 +253,4 @@ print(f"\nNegative predictions in OOS: {negative_count} out of {len(y_hat_test)}
 if negative_count > 0:
     print(f"Minimum OOS prediction: {y_hat_test.min():.4f}")
 else:
-    print("No negative predictions - good!")
-
-# %%
+    print("No negative predictions")

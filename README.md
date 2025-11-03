@@ -19,7 +19,7 @@ There are 63 features related to wind, sun and temperature :
 
 The in-sample target `demand` shows strong periodic patterns :
 
-<img src="img/train_demand.png" width="600px" />
+<img src="img/train_demand.png" width="500px" />
 
 The out-of-sample distribution 
 contains daily data for exactly two years
@@ -123,13 +123,15 @@ k(x, x') = k_{\text{seasonal}}(x, x') + k_{\text{trend}}(x, x') + k_{\text{noise
 ```math
 k_{\text{seasonal}}(x, x') = \sigma_1^2 \cdot \exp\left(-\frac{\|x - x'\|^2}{2\ell_1^2}\right) \cdot \exp\left(-\frac{2\sin^2(\pi\|x - x'\|/T)}{2\ell_p^2}\right)
 ```
-where T ≈ 1 year, ℓ₁ controls smoothness, ℓ_p controls period variation
+where $T\approx 1$ year, 
+$l_1$ controls smoothness, 
+$l_p$ controls period variation.
 
 **Trend component:** Long-term RBF for gradual variations
 ```math
 k_{\text{trend}}(x, x') = \sigma_2^2 \cdot \exp\left(-\frac{\|x - x'\|^2}{2\ell_2^2}\right)
 ```
-where ℓ₂ = 10.0 captures long-term patterns
+where $l_2 = 10$ captures long-term patterns
 
 **Noise component:** White kernel for measurement uncertainty
 ```math
@@ -141,21 +143,37 @@ where $\sigma_n^2 \in [1e-5, 1e1]$ optimized during training
 
 In-sample prediction comparison with the true demand :
 
-<img src="img/gp_in_sample.png" width="400px" />
+<img src="img/gp_in_sample.png" width="500px" />
+
+The RMSE is down to $\approx 6$ 
+for in-sample data.
 
 The out-of-sample prediction seems reliably following the seasonality :
 
-<img src="img/gp_oos_prediction.png" width="400px" />
+<img src="img/gp_oos_prediction.png" width="500px" />
 
 With reasonable confidence intervals :
 
-<img src="img/gp_oos_detail.png" width="400px" />
+<img src="img/gp_oos_detail.png" width="500px" />
 
 ## Discussion 
 
-**Feature engineering**
+**Feature engineering :**
 
-**Incorporating external data**
-Gas and electricity prices
-Major events affecting gas supply in Europe like the invasion of Crimea in 2014, major anouncements about NordStream.
+One can further apply traditional feature engineering to find
+relevant non-linearity in the data,
+specifically cross-product features.
 
+The linear regression could further benefit from other 
+monotonous self-transforms on features. 
+
+**Incorporating external data :**
+
+One can expect **gas and electricity prices** to have a strong (negatively correlated) impact on the domestic gas demand, which is to couple with major events like the invasion of Crimea in 2014 
+(although to a much smaller extent than the current war in Ukraine,
+also affecting direct gas supply to Europe - eg NordStream 2).
+
+Outstanding meteorological events could also be accounted for,
+for instance the 2018 cold-wave dubbed "Beast from the East".
+Therefore **meteorological data** like the presence of an anticyclone 
+could be relevant.
