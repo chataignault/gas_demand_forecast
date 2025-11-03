@@ -10,6 +10,7 @@ import datetime as dt
 from matplotlib import pyplot as plt
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.preprocessing import StandardScaler
 from enum import Enum
 from IPython.display import display
 
@@ -117,6 +118,77 @@ x_mean = np.mean(X, axis=0).copy()
 
 print("Shape of the final feature set :", X.shape)
 
+# %% Feature Importance Analysis with Standardized Features
+
+print("\n" + "="*60)
+print("Feature Importance Analysis (with standardized features)")
+print("="*60)
+
+# Copy X to avoid interfering with training data
+X_analysis = X.copy()
+
+# Get feature names from the train dataframe
+feature_names = [col for col in train.columns if col not in [TARGET_COL, DATE_COL]]
+
+# Standardize features (mean=0, std=1)
+scaler = StandardScaler()
+X_standardized = scaler.fit_transform(X_analysis)
+
+# Fit Lasso with cross-validation on standardized data
+param_grid_analysis = {
+    'alpha': np.logspace(-4, 2, 50)
+}
+
+kfold_analysis = KFold(n_splits=5, shuffle=True, random_state=42)
+lasso_analysis = Lasso(fit_intercept=True, max_iter=10000)
+
+grid_search_analysis = GridSearchCV(
+    estimator=lasso_analysis,
+    param_grid=param_grid_analysis,
+    cv=kfold_analysis,
+    scoring='neg_root_mean_squared_error',
+    n_jobs=-1,
+    verbose=0
+)
+
+grid_search_analysis.fit(X_standardized, y)
+
+# Get the best model and coefficients
+best_lasso = grid_search_analysis.best_estimator_
+coefficients = best_lasso.coef_
+
+# Create feature importance table
+feature_importance = pd.DataFrame({
+    'feature': feature_names,
+    'coefficient': coefficients,
+    'abs_coefficient': np.abs(coefficients)
+})
+
+# Add indicator for retained features (non-zero coefficients)
+feature_importance['retained'] = feature_importance['abs_coefficient'] > 0
+
+# Sort by absolute coefficient value
+feature_importance = feature_importance.sort_values('abs_coefficient', ascending=False)
+
+print(f"\nBest alpha for standardized features: {grid_search_analysis.best_params_['alpha']:.6f}")
+print(f"Best CV RMSE: {-grid_search_analysis.best_score_:.4f}")
+print(f"\nNumber of retained features: {feature_importance['retained'].sum()} / {len(feature_names)}")
+print(f"Number of zeroed-out features: {(~feature_importance['retained']).sum()}")
+
+print("\n--- Top 20 Most Important Features (by absolute coefficient) ---")
+display(feature_importance.head(20))
+
+print("\n--- All Retained Features ---")
+retained_features = feature_importance[feature_importance['retained']]
+display(retained_features)
+
+print("="*60 + "\n")
+
+retained_features["feature category"] = retained_features["feature"].str.split("_").apply(lambda x: x[0])
+retained_features.groupby("feature category")["abs_coefficient"].mean().sort_values(ascending=False).to_frame()
+
+# %% Main Model Training (on original scale)
+
 # Define parameter grid for Lasso regularization
 param_grid = {
     'alpha': np.logspace(-4, 2, 50)  # Test alpha values from 0.0001 to 100
@@ -181,24 +253,10 @@ print("Which is exactly two years.")
 dates_test = [dt.date.fromisoformat(d) for d in test[DATE_COL].to_numpy()]
 
 # %%
-X_test = test[features].to_numpy()
-
-# %% Relative difference of features
-
-# var_diff = (np.var(X, axis=0) - np.var(X_test, axis=0)) / np.var(X, axis=0)
-# var_diff = pd.Series(var_diff, index=features)
-# var_diff = var_diff.loc[var_diff.abs() > .05]
-# colours = var_diff.apply(lambda v : 'green' if v > 0. else 'red')
-# var_diff.sort_values().plot(
-#     kind='bar',
-#     title='OOS features, variance, relative difference',
-#     color=var_diff.sort_values().index.to_series().map(colours).to_list(),
-#     alpha=.5
-#     )
-
-# plt.tight_layout()
-
-# plt.savefig(IMG_FOLDER / 'oos_var_diff.png')
+test = pl.from_dataframe(test)
+for c in temp_features:
+    test = test.with_columns((np.log((pl.col(c) + TEMP_C_TO_K) / TEMP_C_TO_K)).alias(c+"_logk"))
+X_test = test.to_pandas()[features+log_k_temp_features].to_numpy()
 
 # %% 
 
