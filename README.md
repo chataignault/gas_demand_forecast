@@ -5,7 +5,9 @@ from aggregated humidity and temperature data.
 The training set spans 2009 to the end of 2019, 
 with no missing values or erroneous data types.
 
-There are 63 features related to wind, sun and temperature :
+> [!TIP]
+> There are 63 features related to wind, sun and temperature
+
 
 | Name | Description |
 | ---- | ----------- | 
@@ -177,3 +179,7 @@ Outstanding meteorological events could also be accounted for,
 for instance the 2018 cold-wave dubbed "Beast from the East".
 Therefore **meteorological data** like the presence of an anticyclone 
 could be relevant.
+
+> [!NOTE]
+> Including external data would take more than 90 minutes which is the given time for the assignment.
+
